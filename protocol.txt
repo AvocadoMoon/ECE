@@ -1,0 +1,24 @@
+ECE Protocol (Encrypted Cat Exchange)
+#Assuming intial distribution of public keys, there is no adversary in the middle. For if there was CA would be required.
+- We have two parties, Alice and Bob 
+- Alice and Bob can communicate with each other over sockets 
+- First, they perform a Diffie Hellman Key Exchange to produce a shared secret symmetric key. Need a key for MAC and one for information
+- Compressing files with compression algorithim. aka zip file. Need to check if compresion is secure
+- Then, this secret key is used to encrypt files in a particular directory.
+- The encrypted files are then securely sent to the other party (using FTP or some other protocol of the like)
+- The recipient party will decrypt the files. 
+- Then, the ML algorithm will look at the decrypted files and alert the recipient if the file is a picture with a cat.
+
+
+- say x = diffie hellman key 
+PRF keyed with x ==> produces some k = Kenc || Kmac 
+
+Send Nonces!!! (prevents replay attacks)
+
+todo:
+    - send file (My_Man.jpg) over socket connection (FTP) (i need to look at 3100 code to see how to do this)
+        - create test functions for non encrypted file transfer
+    - compress file and encrypt it and THEN send it 
+        - create test functions for encyrpted file transfer
+    - source of randomness --> generate nonces and x and y for diffie hellman
+

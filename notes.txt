@@ -1,0 +1,10 @@
+An IP address should be assigned uniquely to a host within a network. An IP address inside one network may refer to a completely different host than the same IP address in another network.
+
+Think of a network as a street, and an IP address as a house number. If you live on Fifth Avenue, the number 11 isn't magically going to refer to a house on Wall Street.
+
+You first need to send the letter to a post office, and then the post office sends the letter to the next post office, until it can be delivered to a house.
+
+Here, you need to send a message to the router of the receiving network, and the router then forwards the message to the host within the network. Find the 'outside' IP address of your router, and send the message to that address. 
+Then set up the router to perform NAT port forwarding. 
+When the router receives a package for some outside port number, it will forward the message to an 'inside address'.
+
