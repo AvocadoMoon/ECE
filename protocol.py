@@ -1,5 +1,6 @@
 import socket
 import threading
+import copy
 
 #due to similarity in how client and server recieve messages, just create a class for both
 class Transportation():
@@ -7,18 +8,42 @@ class Transportation():
         self.selfName = selfName
         self.stop = False
         self.serverSock = serverSock
+        self.fileCommand = "file \n"    #the newline at the end can not be sent through regular messages due to strip, signify file is being sent
+        self.specialCharsDict = {ord('\n'): 'newline', ord('\t'): 'tab'} #ord makes ASCII number out of char
 
     def textMessage(self, sock):
-        def sendMessage(self, sock, selfName):
+        def sendMessage(self, sock):
             while True:
                 # start mutex
                 output = input()
+                output = self.sanatize(output)        #need to sanatize so that certain characters are limited and therefore can be used to signal certain functions, don't want user to be able to acess through typing string
                 # end mutex
                 if output == "q" or self.stop:
-                    sock.send((selfName + " Has Left").encode())
+                    sock.send((self.selfName + " Has Left").encode())
+                    sock.send("q".encode())
                     self.stop = True
                     break
-                sock.send((selfName + ": " + output).encode())
+
+
+                elif output == "-h":
+                    string = "Help: \n -h: Brings the help table \n -f: Goes into file transportation mode \n"
+                    print(string)
+                
+                #send intent of file transfer, send filename, get response, send file or go back to message mode
+                elif output == "-f":
+                    sock.send(self.fileCommand.encode())
+                    output = input("Please give the files path: ")
+                    fileName = output.split('\\')[-1]
+                    sock.send(fileName.encode())
+                    print("Waiting for reciever to accept file.")
+                    msg = sock.recv(1024).decode()
+                    if msg == "Y":
+                        print("Output: " + output)
+                        self.sendFile(sock, output)
+                    else:
+                        print("They rejected the file transfer")
+                else:
+                    sock.send((self.selfName + ": " + output).encode())
 
 
         def recieveMessage(self, sock):
@@ -31,9 +56,23 @@ class Transportation():
                     print("Disconnected Bye")
                     self.stop = True
                     break
-                print(msg)
+
+
+                elif msg == self.fileCommand:
+                    fileName = sock.recv(1024).decode()
+                    output = input("Would you want to recieve the file '" + fileName + "'? (Y/N): ")
+                    if output == "Y":
+                        sock.send("Y".encode())
+                        output = input("Where would you want to save the file? (Path): ")
+                        self.recieveFile(sock, output)
+                    else:
+                        print("File transfer not executed")
+
+                
+                else:
+                    print(msg)
     
-        send = threading.Thread(target=sendMessage, args=(self, sock, self.selfName))
+        send = threading.Thread(target=sendMessage, args=(self, sock))
         recieve = threading.Thread(target=recieveMessage, args=(self, sock, ))
 
         send.start()
@@ -44,16 +83,32 @@ class Transportation():
 
         sock.close()
 
-        if not(self.serverSock):
+        if self.serverSock != None:
             self.serverSock.close()
     
 
-    def fileTransfer(self, sock):
-        def sendFile(self, sock):
-            pass
+    
+    def sendFile(self, sock, filePath):
+        file = open(filePath, "rb")
+        while True:
+            bytes = file.read(1024)
+            if len(bytes) == 0:
+                break
+            sock.send(bytes)
+        file.close()
 
-        def recieveFile(self, sock):
-            pass
+    def recieveFile(self, sock, savePath):
+        file = open(savePath, "wb")
+        while True:
+            data = sock.recv(1024)
+            file.write(data)
+            if len(data) != 1024:
+                break
+        file.close()
+    
+    def sanatize(self, msg):
+        msg.translate(self.specialCharsDict) #changes all chars in msg to accaptable messages specified in the dict, key entry is replaced by value entry
+        return msg
 
 
 #need to put in an error catch for when server is not there
@@ -62,7 +117,7 @@ class Client():
         self.__IP__ = IP
         self.__PORT__ = PORT
         self.__sock__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
-        self.__name__ = name
+        self.__name__ = name.strip()
         self.__transport__ = Transportation(name)
         if (type(self.__name__) != type(" ")):
             raise TypeError
@@ -105,8 +160,8 @@ class Server():
             clientSock.close()
 
 
-#class all for encyrption and decryption of data, along with other functions that relate to the protocol
-class Protocol():
+#class all for encyrption and decryption of data
+class Encryption():
     pass
 
 
@@ -115,3 +170,4 @@ class Protocol():
 #IDEAS:
 # -- if diffie, send a tupple of keys from both parties in one message
 # -- have one thread listening for messages and another for sending messages, that way it won't have to be a call response method for Alice and Bob
+# -- private class filled with command strings where the user can't access it

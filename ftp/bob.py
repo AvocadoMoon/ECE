@@ -11,16 +11,23 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True  # credit to: https://stackoverflow.com/q
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
 sock.connect((IP, PORT))    # connect to the server
 
-file_size = sock.recv(10000000) # receive the payload size (aka how many bytes the image will be)
-print(file_size)
-sock.send(b'OK')
-file_size = int(file_size.decode())
-msg = sock.recv(file_size)    # receive a message from the server
-img = Image.open(io.BytesIO(msg)) # load the image as a byte stream?
-# img.show() # simply display the image
-img.save("bob_received.png", "PNG")  # save the image we received as a new file
+# file_size = sock.recv(10000000) # receive the payload size (aka how many bytes the image will be)
+# print(file_size)
+# sock.send(b'OK')
+# file_size = int(file_size.decode())
+# msg = sock.recv(file_size)    # receive a message from the server
+# img = Image.open(io.BytesIO(msg)) # load the image as a byte stream?
+# # img.show() # simply display the image
+# img.save("bob_received.png", "PNG")  # save the image we received as a new file
 
-
+file = open("file.png", "wb")
+while True:
+    data = sock.recv(1024)
+    file.write(data)
+    if len(data) != 1024:
+        break
+file.close()
+sock.close()
 
 # miscellaneous: receive bytes incrementally...
 ''' remaining = file_size    # remaining number of bytes that bob needs to receive
