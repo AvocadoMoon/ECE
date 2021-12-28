@@ -3,7 +3,7 @@ import random
 import protocol
 
 IP = "127.0.0.1"    # IP address points to ourself
-PORT = 3400         # completely random port number
+PORT = 3401        # completely random port number
 
 # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
 # sock.connect((IP, PORT))    # connect to the server
@@ -22,5 +22,5 @@ PORT = 3400         # completely random port number
 #         break
 
 
-bob = protocol.Client(3400, "127.0.0.1", "Bob")
+bob = protocol.Client(3401, "127.0.0.1", "Bob")
 bob.connect()

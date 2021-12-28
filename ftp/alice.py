@@ -14,7 +14,8 @@ sock.listen(3)          # prepare to listen for incoming connections
 
 def handleClientConnection(clientsock, bytes):
     size = str(len(bytes))
-    # print(size)
+    print(type(size))
+    print(size)
     clientsock.send(size.encode())  # send the payload size
     response = clientsock.recv(1024)
     if response.decode() == "OK":

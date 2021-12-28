@@ -3,37 +3,49 @@ import threading
 
 #due to similarity in how client and server recieve messages, just create a class for both
 class Transportation():
-    def __init__(self, selfName):
+    def __init__(self, selfName, serverSock=None):
         self.selfName = selfName
-        self.othersName = None
+        self.stop = False
+        self.serverSock = serverSock
 
     def textMessage(self, sock):
-        def sendMessage(sock, selfName):
+        def sendMessage(self, sock, selfName):
             while True:
+                # start mutex
                 output = input()
-                if output == "q":
+                # end mutex
+                if output == "q" or self.stop:
                     sock.send((selfName + " Has Left").encode())
+                    self.stop = True
                     break
-                sock.send(output.encode())
+                sock.send((selfName + ": " + output).encode())
 
 
-        def recieveMessage(sock, othersName):
+        def recieveMessage(self, sock):
             while True:
+                # start mutex
                 msg = sock.recv(1024).decode()
-                if (msg == "q"):
+                # end mutex
+                if (msg == "q") or self.stop:
+                    print(msg)
+                    print("Disconnected Bye")
+                    self.stop = True
                     break
-                print(othersName + ": " + msg)
+                print(msg)
     
-        send = threading.Thread(target=sendMessage, args=(sock, self.selfName))
-        recieve = threading.Thread(target=recieveMessage, args=(sock, self.othersName, ))
+        send = threading.Thread(target=sendMessage, args=(self, sock, self.selfName))
+        recieve = threading.Thread(target=recieveMessage, args=(self, sock, ))
 
         send.start()
         recieve.start()
 
         recieve.join()
-        send.join
+        send.join()
 
         sock.close()
+
+        if not(self.serverSock):
+            self.serverSock.close()
     
 
     def fileTransfer(self, sock):
@@ -43,51 +55,54 @@ class Transportation():
         def recieveFile(self, sock):
             pass
 
+
+#need to put in an error catch for when server is not there
 class Client():
     def __init__(self, PORT, IP, name):
-        self.IP = IP
-        self.PORT = PORT
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
-        self.name = name
-        self.transport = Transportation(name)
-        if (type(self.name) != type(" ")):
+        self.__IP__ = IP
+        self.__PORT__ = PORT
+        self.__sock__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
+        self.__name__ = name
+        self.__transport__ = Transportation(name)
+        if (type(self.__name__) != type(" ")):
             raise TypeError
     
     def connect(self):
-        self.sock.connect((self.IP, self.PORT))    # connect to the server
-        self.sock.send(self.name.encode())      #in future already have encryption set up and message through that
-        response = self.sock.recv(1024).decode()
-        if (response == "Y"):
-            serverName = self.sock.recv(1024).decode()
-            self.transport.othersName = serverName
-            self.transport.textMessage(self.sock)
+        self.__sock__.connect((self.__IP__, self.__PORT__))    # connect to the server
+        self.__sock__.send(self.__name__.encode())      #in future already have encryption set up and message through that
 
+        response = self.__sock__.recv(1024).decode()
+        if (response == "Y"):
+            self.__transport__.textMessage(self.__sock__)   # starts two threads
+        else:
+            self.__sock__.close()
     
 
 class Server():
     def __init__(self, PORT, IP, name):
-        self.IP = IP
-        self.PORT = PORT
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
-        self.name = name
-        self.transport = Transportation(name)
-        if (type(self.name) != type(" ")):
+        self.__IP__ = IP
+        self.__PORT__ = PORT
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket object, uses a TCP connection
+        self.__sock__ = sock
+        self.__name__ = name
+        self.__transport__ = Transportation(name, sock)
+        if (type(self.__name__) != type(" ")):
             raise TypeError
     
     def connectClient(self):
-        self.sock.bind((self.IP, self.PORT))   # bind to the specified IP address and port number
-        self.sock.listen(3)          # prepare to listen for incoming connections
-        clientSock, addr = self.sock.accept()    # accept a connection from a client
+        self.__sock__.bind((self.__IP__, self.__PORT__))   # bind to the specified IP address and port number
+        self.__sock__.listen(3)          # prepare to listen for incoming connections
+        clientSock, addr = self.__sock__.accept()    # accept a connection from a client
 
         name = clientSock.recv(1024).decode()      #no way to authenticate clients name yet
-        self.transport.othersName = name
+
         msg = input("Do you want to communicate with: " + name + "? (Y/N) ") #allow more options other than just text based communication in the future
         if (msg == "Y"):
             clientSock.send("Y".encode())
-            clientSock.send(self.name.encode())
-            self.transport.textMessage(clientSock)
-        clientSock.send("No".encode())
-    
+            self.__transport__.textMessage(clientSock)  # starts two threads
+        else:
+            clientSock.send("No".encode())
+            clientSock.close()
 
 
 #class all for encyrption and decryption of data, along with other functions that relate to the protocol

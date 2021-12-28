@@ -4,7 +4,7 @@ import protocol
 # Alice is acting as the "server"
 
 IP = "127.0.0.1"    # IP address points to ourself
-PORT = 3400         # completely random port number
+PORT = 3401         # completely random port number
 
 #AF_INET means IPV4
 #SOCK_STREAM means connection-oriented TCP protocol
@@ -31,7 +31,7 @@ PORT = 3400         # completely random port number
 # clientsock, addr = sock.accept()    # accept a connection from a client
 # handleClientConnection(clientsock, addr)
 
-alice = protocol.Server(3400, "127.0.0.1", "Alice")
+alice = protocol.Server(3401, "127.0.0.1", "Alice")
 
 alice.connectClient()
 

@@ -12,6 +12,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create the socket obj
 sock.connect((IP, PORT))    # connect to the server
 
 file_size = sock.recv(10000000) # receive the payload size (aka how many bytes the image will be)
+print(file_size)
 sock.send(b'OK')
 file_size = int(file_size.decode())
 msg = sock.recv(file_size)    # receive a message from the server
