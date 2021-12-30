@@ -1,6 +1,7 @@
 import socket
 import random
 import protocol
+import gui
 
 IP = "127.0.0.1"    # IP address points to ourself
 PORT = 3401        # completely random port number

@@ -1,6 +1,8 @@
 import socket
 import threading
 import copy
+import os
+import time
 
 #due to similarity in how client and server recieve messages, just create a class for both
 class Transportation():
@@ -12,13 +14,14 @@ class Transportation():
         self.specialCharsDict = {ord('\n'): 'newline', ord('\t'): 'tab'} #ord makes ASCII number out of char
 
     def textMessage(self, sock):
-        def sendMessage(self, sock):
+        def sendMessage(self, sock, stop, inputLock):
             while True:
                 # start mutex
+                time.sleep(1)
                 output = input()
                 output = self.sanatize(output)        #need to sanatize so that certain characters are limited and therefore can be used to signal certain functions, don't want user to be able to acess through typing string
                 # end mutex
-                if output == "q" or self.stop:
+                if output == "q" or stop.is_set():
                     sock.send((self.selfName + " Has Left").encode())
                     sock.send("q".encode())
                     self.stop = True
@@ -29,51 +32,57 @@ class Transportation():
                     string = "Help: \n -h: Brings the help table \n -f: Goes into file transportation mode \n"
                     print(string)
                 
-                #send intent of file transfer, send filename, get response, send file or go back to message mode
+
                 elif output == "-f":
-                    sock.send(self.fileCommand.encode())
-                    output = input("Please give the files path: ")
-                    fileName = output.split('\\')[-1]
-                    sock.send(fileName.encode())
-                    print("Waiting for reciever to accept file.")
-                    msg = sock.recv(1024).decode()
-                    if msg == "Y":
-                        print("Output: " + output)
-                        self.sendFile(sock, output)
-                    else:
-                        print("They rejected the file transfer")
+                    sock.send(self.fileCommand.encode())    #send intent of file transfer
+
+                    output = input("Please give the files path: ")  #get file name and send it
+                    # fileName = output.split('\\')[-1]
+                    # sock.send(fileName.encode())
+
+                    self.sendFile(sock, output)     #send file
+
+                    # print("Waiting for reciever to accept file.")   #get response
+                    # msg = sock.recv(1024).decode()
+                    # if msg == "Y":
+                    #     self.sendFile(sock, output)     #send file
+                    # else:
+                    #     print("They rejected the file transfer")    #say file gets rejected
                 else:
                     sock.send((self.selfName + ": " + output).encode())
 
 
-        def recieveMessage(self, sock):
+        def recieveMessage(self, sock, stop, inputLock):
             while True:
-                # start mutex
                 msg = sock.recv(1024).decode()
-                # end mutex
                 if (msg == "q") or self.stop:
                     print(msg)
                     print("Disconnected Bye")
                     self.stop = True
                     break
 
-
-                elif msg == self.fileCommand:
-                    fileName = sock.recv(1024).decode()
-                    output = input("Would you want to recieve the file '" + fileName + "'? (Y/N): ")
-                    if output == "Y":
-                        sock.send("Y".encode())
-                        output = input("Where would you want to save the file? (Path): ")
-                        self.recieveFile(sock, output)
-                    else:
-                        print("File transfer not executed")
+                
+                #cant use input functions since in other thread for send, its input has control over Erno, need to create some other input probabliy through GUI
+                elif msg == self.fileCommand:   #check intent of file transfer
+                    # fileName = sock.recv(1024).decode()     #get file name
+                    # input("Would you want to recieve the file '" + "" + "'? (Y/N): ")    #accept or decline file
+                    # sock.send(output.encode())  #send response
+                    # if output == "Y":
+                    #     output = input("Where would you want to save the file? (Path): ")   #specify where to save it
+                    #     self.recieveFile(sock, output)  #recieve file
+                    # else:
+                    #     print("File transfer not executed")
+                    self.recieveFile(sock, "t")
 
                 
                 else:
                     print(msg)
     
-        send = threading.Thread(target=sendMessage, args=(self, sock))
-        recieve = threading.Thread(target=recieveMessage, args=(self, sock, ))
+        stop = threading.Event()
+        inputLock = threading.Lock()
+        recieve = threading.Thread(target=recieveMessage, args=(self, sock, stop))
+        send = threading.Thread(target=sendMessage, args=(self, sock, stop))
+
 
         send.start()
         recieve.start()
@@ -171,3 +180,19 @@ class Encryption():
 # -- if diffie, send a tupple of keys from both parties in one message
 # -- have one thread listening for messages and another for sending messages, that way it won't have to be a call response method for Alice and Bob
 # -- private class filled with command strings where the user can't access it
+
+
+if __name__ == "__main__":
+    n = os.fork()
+
+    port = 3400
+    ip = "127.0.0.1"
+
+    #Alice
+    if n == 0:
+        alice = Server(port, ip, "Alice")
+        alice.connectClient()
+    
+    else:
+        bob = Client(port, ip, "Bob")
+        bob.connect()

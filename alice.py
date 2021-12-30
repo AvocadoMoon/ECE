@@ -1,5 +1,6 @@
 import socket
 import protocol
+import gui
 
 # Alice is acting as the "server"
 
