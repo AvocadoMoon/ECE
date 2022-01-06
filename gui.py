@@ -1,11 +1,16 @@
 from tkinter import *
 import protocol
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import *
+# https://ttkbootstrap.readthedocs.io/en/latest/gettingstarted/installation/ 
+# install with pip 
 
 BG_GRAY = "#ABB2B9"
 BG_COLOR = "#17202A"
 TEXT_COLOR = "#EAECEE"
 ACTIVE_COLOR = "#17202F"
 CHECKBUTTON_COLOR = "#000000"
+WHITE = "#FFFFFF"
 
 FONT = "Helvetica 14"
 FONT_BOLD = "Helvetica 13 bold"
@@ -18,8 +23,8 @@ class ChatApplication:
     def __init__(self):
         self.window = Tk()
         self.window.withdraw()  # hide the chat window temporarily while we make the user log in
-        #self._login()
-        self._connect()
+        self._login()
+        # self._connect()
 
         self.connection = None
         
@@ -30,37 +35,37 @@ class ChatApplication:
         self.login = Toplevel() # login window
         self.login.title = "Login"
         self.login.resizable(width = False, height = False)
-        self.login.configure(width = 400, height = 300, bg=BG_COLOR)
+        self.login.configure(width = 400, height = 300)
 
         # Label that tells user they are required to log in
-        self.require = Label(self.login, text = "Login to continue", justify = CENTER, font = FONT_BOLD)
-        self.require.place(relheight = 0.15, relx = 0.2, rely = 0.07)
+        self.require = ttk.Label(self.login, text = "Login to continue", bootstyle="default")
+        self.require.place(relheight = 0.15, relx = 0.4, rely = 0.07)
 
         # username and password labels
-        self.username = Label(self.login, text= "Username: ", font = "Helvetica 12")
+        self.username = ttk.Label(self.login, text= "Username: ", bootstyle="default")
         self.username.place(relheight = 0.2, relx = 0.1, rely = 0.2)
-        self.password = Label(self.login, text= "Password: ", font = "Helvetica 12")
+        self.password = ttk.Label(self.login, text= "Password: ", bootstyle="default")
         self.password.place(relheight = 0.2, relx = 0.1, rely = 0.4)
 
         # entry boxes for typing username and password
-        self.entry_username = Entry(self.login, font = "Helvetica 12")
-        self.entry_username.place(relwidth = 0.4, relheight = 0.12, relx = 0.35, rely = 0.2)
+        self.entry_username = ttk.Entry(self.login, bootstyle="primary")
+        self.entry_username.place(relwidth = 0.4, relheight = 0.12, relx = 0.30, rely = 0.25)
 
-        self.entry_password = Entry(self.login, font = "Helvetica 12")
-        self.entry_password.place(relwidth = 0.4, relheight = 0.12, relx = 0.35, rely = 0.4)
+        self.entry_password = ttk.Entry(self.login, bootstyle="primary", show="*")
+        self.entry_password.place(relwidth = 0.4, relheight = 0.12, relx = 0.30, rely = 0.45)
 
         # failed login label
-        self.fail = Label(self.login, text = "Login Failed", justify = CENTER, font = FONT_BOLD, fg="#d90202")
+        self.fail = ttk.Label(self.login, text = "Login Failed", justify = CENTER, bootstyle="danger")
 
         # login button 
-        self.attempt_login = Button(self.login, text="Login", font=FONT_BOLD, width=20, fg="#000000",
+        self.attempt_login = ttk.Button(self.login, text="Login", width=20, bootstyle="default",
                              command=lambda: self._verify_credentials(self.entry_username.get(), self.entry_password.get()))
-        self.attempt_login.place(x=150, y=200)
+        self.attempt_login.place(x=110, y=210)
 
         # create new account button
-        self.create_account = Button(self.login, text="Create a new account", font = "Helvetica 10", width=20, fg="#000000",
+        self.create_account = ttk.Button(self.login, text="Create a new account", width=20, bootstyle="default-outline",
                              command=lambda: self._create_new_account()) 
-        self.create_account.place(x=150, y=250)
+        self.create_account.place(x=110, y=250)
 
     def _verify_credentials(self, entry_username, entry_password):
         # open the credentials file and parse it. this is inefficient. needs to be optimized/cleaned up...
@@ -70,19 +75,14 @@ class ChatApplication:
         for c in credentials:   # for each line in the file, split it at the colon
             info = c.split(':')
             username, password = info[0], info[1]   # extract the username and password 
-            if entry_username == username:  # if we found the matching username...
-                if entry_password == password.strip():
-                    self.sender = entry_username  # create a new attribute for the sender's name
-                    self.login.destroy() # successful login! so we can destroy the login window
-                    self._setup_main_window()   # open the actual chat window
-                else:
-                    self.fail.forget() # initially hide the failure label so that it pops up new every time
-                    self.fail.place(relheight = 0.15, relx = 0.45, rely = 0.75) # display that the login failed
-                    break
-            else:
-                    self.fail.forget() # initially hide the failure label so that it pops up new every time
-                    self.fail.place(relheight = 0.15, relx = 0.45, rely = 0.75) # display that the login failed
-                    break
+            print(entry_username, entry_password)
+            print('credentials:', username, password)
+            if entry_username == username and entry_password == password.strip():
+                self.sender = entry_username  # create a new attribute for the sender's name
+                self.login.destroy() # successful login! so we can destroy the login window
+                self._setup_main_window()   # open the actual chat window
+        self.fail.place(relheight = 0.08, x = 160, y = 175) # if credentials were incorrect, tell the user that the login failed
+                
     
     #still need to add login button
     def _connect(self):
@@ -103,7 +103,7 @@ class ChatApplication:
         self.setup.configure(width=400, height=400, bg=BG_COLOR)
 
         serverVar = IntVar()
-        serverButton = Checkbutton(self.setup, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=BG_COLOR, fg=TEXT_COLOR, activebackground=BG_COLOR, 
+        serverButton = Checkbutton(self.setup, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=WHITE, fg=TEXT_COLOR, activebackground=BG_COLOR, 
         activeforeground=TEXT_COLOR,selectcolor=CHECKBUTTON_COLOR, relief=FLAT, command=connectionType, variable=serverVar)
 
         serverButton.place(relheight=0.07, relx=0.35, rely=0.8, relwidth=0.35)
@@ -130,54 +130,61 @@ class ChatApplication:
 
         self.account.title("Create a new account")
         self.account.resizable(width = False, height = False)
-        self.account.configure(width = 400, height = 300, bg=BG_COLOR)
+        self.account.configure(width = 400, height = 300)
 
         # Label that tells user they are here to create a new account
-        self.new = Label(self.account, text = "Create a new account", justify = CENTER, font = FONT_BOLD)
-        self.new.place(relheight = 0.15, relx = 0.2, rely = 0.07)
+        self.new = ttk.Label(self.account, text = "Create a new account", justify = CENTER, style="default")
+        self.new.place(relheight = 0.15, relx = 0.35, rely = 0.07)
 
         # new username, password, and re-enter password labels
-        self.new_username = Label(self.account, text= "Enter a username: ", font = "Helvetica 12")
+        self.new_username = ttk.Label(self.account, text= "Enter a username: ", style="default")
         self.new_username.place(relheight = 0.2, relx = 0.1, rely = 0.2)
-        self.new_password = Label(self.account, text= "Enter a password: ", font = "Helvetica 12")
-        self.new_password.place(relheight = 0.2, relx = 0.1, rely = 0.6)
+        self.new_password = ttk.Label(self.account, text= "Enter a password: ", style="default")
+        self.new_password.place(relheight = 0.2, relx = 0.1, rely = 0.4)
         
         # todo for future
         # self.reenter = Label(self.account, text= "Re-enter the same password: ", font = "Helvetica 12")
         # self.reenter.place(relheight = 0.2, relx = 0.1, rely = 1)
 
         # entry boxes for typing username and password
-        self.entry_new_username = Entry(self.account, font = "Helvetica 12")
-        self.entry_new_username.place(relwidth = 0.4, relheight = 0.12, relx = 0.35, rely = 0.2)
+        self.entry_new_username = ttk.Entry(self.account, style="success")
+        self.entry_new_username.place(relwidth = 0.4, relheight = 0.12, relx = 0.4, rely = 0.25)
 
-        self.entry_new_password = Entry(self.account, font = "Helvetica 12")
-        self.entry_new_password.place(relwidth = 0.4, relheight = 0.12, relx = 0.35, rely = 0.6)
+        self.entry_new_password = ttk.Entry(self.account, style="success", show="*")
+        self.entry_new_password.place(relwidth = 0.4, relheight = 0.12, relx = 0.4, rely = 0.45)
 
         # todo for future
         # self.entry_reenter = Entry(self.account, font = "Helvetica 12")
         # self.entry_reenter.place(relwidth = 0.4, relheight = 0.12, relx = 0.35, rely = 1)
 
-        self.create = Button(self.account, text="Create a new account", font = FONT_BOLD, width=20, bg=BG_GRAY,
+        self.create = ttk.Button(self.account, text="Create a new account", width=20, style="success-outline",
                              command=lambda: self._store_credentials(self.entry_new_username.get(), self.entry_new_password.get())) 
-        self.create.place(x=150, y=250)
+        self.create.place(x=110, y=190)
 
     def _store_credentials(self, username, password):
-        f = open('credentials.txt', 'a')
-        f.write('\n')
-        f.write(username + ':' + password)
-        f.close()
+        if not(username) or not(password):
+            self.please = ttk.Label(self.account, text = "Please enter a username and password", justify = CENTER, bootstyle="danger")
+            self.please.place(relheight = 0.15, relx = 0.2, rely = .8)
+        else:
+            f = open('credentials.txt', 'a')
+            f.write('\n')
+            f.write(username + ':' + password)
+            f.close()
 
-        # allow user to close out of this window now
-        self.account.after(2000) # delay for 2 seconds 
-        self.new.forget()
-        self.new_username.forget()
-        self.new_password.forget()
-        self.entry_new_username.forget()
-        self.entry_new_password.forget()
-        self.create.forget()
+            # allow user to close out of this window now
+            self.account.after(2000) # delay for 2 seconds 
+            try:
+                self.please.destroy()
+            except:
+                self.new.destroy()
+                self.new_username.destroy()
+                self.new_password.destroy()
+                self.entry_new_username.destroy()
+                self.entry_new_password.destroy()
+                self.create.destroy()
 
-        self.success = Label(self.account, text = "Account successfully created! You may now close out of this window and proceed to the login.", justify = CENTER, font = FONT_BOLD)
-        self.success.place(relheight = 0.15, relx = 0.2, rely = 0.07)
+            self.success = ttk.Label(self.account, text = "Account successfully created! \nYou may now close out of this window and proceed to the login.", justify = CENTER, bootstyle="success")
+            self.success.place(relheight = 0.15, relx = 0.02, rely = 0.4)
 
 
 
@@ -221,7 +228,15 @@ class ChatApplication:
         send_button = Button(bottom_label, text="Send", font=FONT_BOLD, width=20, bg=BG_GRAY,
                              command=lambda: self._on_enter_pressed(None))
         send_button.place(relx=0.77, rely=0.008, relheight=0.06, relwidth=0.22)
+
+        # logout button
+        logout_button = ttk.Button(self.window, text="Logout", bootstyle="primary", command=lambda: self._on_logout_pressed()) 
+        logout_button.place(x=380, y=10)
      
+    def _on_logout_pressed(self):
+        self.window.withdraw()
+        self.__init__()
+
     def _on_enter_pressed(self, event):
         msg = self.msg_entry.get()
         self._insert_message(msg, "You")
