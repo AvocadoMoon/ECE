@@ -1,8 +1,11 @@
 from tkinter import *
+import protocol
 
 BG_GRAY = "#ABB2B9"
 BG_COLOR = "#17202A"
 TEXT_COLOR = "#EAECEE"
+ACTIVE_COLOR = "#17202F"
+CHECKBUTTON_COLOR = "#000000"
 
 FONT = "Helvetica 14"
 FONT_BOLD = "Helvetica 13 bold"
@@ -15,7 +18,8 @@ class ChatApplication:
     def __init__(self):
         self.window = Tk()
         self.window.withdraw()  # hide the chat window temporarily while we make the user log in
-        self._login()
+        #self._login()
+        self._connect()
 
         self.connection = None
         
@@ -79,13 +83,54 @@ class ChatApplication:
                     self.fail.forget() # initially hide the failure label so that it pops up new every time
                     self.fail.place(relheight = 0.15, relx = 0.45, rely = 0.75) # display that the login failed
                     break
+    
+    #still need to add login button
+    def _connect(self):
+        
+        def connectionType():
+            if serverVar.get() == 0:
+                print("Client")
+                self.connection = protocol.Client(int(port.get()), ip.get(), "name")
+            else:
+                print("Server")
+                self.connection = protocol.Server(int(port.get()), ip.get(), "name")
+
+
+        self.setup = Toplevel()
+
+        self.setup.title("Set Connection Settings")
+        self.setup.resizable(width=False, height=False)
+        self.setup.configure(width=400, height=400, bg=BG_COLOR)
+
+        serverVar = IntVar()
+        serverButton = Checkbutton(self.setup, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=BG_COLOR, fg=TEXT_COLOR, activebackground=BG_COLOR, 
+        activeforeground=TEXT_COLOR,selectcolor=CHECKBUTTON_COLOR, relief=FLAT, command=connectionType, variable=serverVar)
+
+        serverButton.place(relheight=0.07, relx=0.35, rely=0.8, relwidth=0.35)
+
+        ip_label = Label(self.setup, text="Enter IP: ", font=FONT, height=5, width=10, background=BG_COLOR, fg= TEXT_COLOR)
+        ip = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
+        ip_label.place(relheight=0.2, relx=0.1, rely=0.07)
+        ip.place(relheight=0.1, relx=0.4, rely=0.11)
+
+        port_label = Label(self.setup, text="Enter Port: ", font=FONT, height=5, width=10, background=BG_COLOR, fg= TEXT_COLOR)
+        port = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
+        port_label.place(relheight=0.2, relx=0.1, rely=0.2)
+        port.place(relheight=0.1, relx=0.4, rely=0.241)
+
+        password_label = Label(self.setup, text="Enter Server \n Password: ", font=FONT, height=3, width=12, background=BG_COLOR, fg= TEXT_COLOR, wraplength=150)
+        password = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
+        password_label.place(relheight=0.15, relx=0.1, rely=0.341)
+        password.place(relheight=0.1, relx=0.4, rely=0.372)
+        
+
 
     def _create_new_account(self):
         self.account = Toplevel() # create new account window
 
-        self.account.title = "Create a new account"
+        self.account.title("Create a new account")
         self.account.resizable(width = False, height = False)
-        self.account.configure(width = 400, height = 300)
+        self.account.configure(width = 400, height = 300, bg=BG_COLOR)
 
         # Label that tells user they are here to create a new account
         self.new = Label(self.account, text = "Create a new account", justify = CENTER, font = FONT_BOLD)
