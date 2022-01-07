@@ -23,8 +23,8 @@ class ChatApplication:
     def __init__(self):
         self.window = Tk()
         self.window.withdraw()  # hide the chat window temporarily while we make the user log in
-        self._login()
-        # self._connect()
+        #self._login()
+        self._connect()
 
         self.connection = None
         
@@ -42,10 +42,10 @@ class ChatApplication:
         self.require.place(relheight = 0.15, relx = 0.4, rely = 0.07)
 
         # username and password labels
-        self.username = ttk.Label(self.login, text= "Username: ", bootstyle="default")
-        self.username.place(relheight = 0.2, relx = 0.1, rely = 0.2)
-        self.password = ttk.Label(self.login, text= "Password: ", bootstyle="default")
-        self.password.place(relheight = 0.2, relx = 0.1, rely = 0.4)
+        usernameLabel = ttk.Label(self.login, text= "Username: ", bootstyle="default")
+        usernameLabel.place(relheight = 0.2, relx = 0.1, rely = 0.2)
+        passwordLabel = ttk.Label(self.login, text= "Password: ", bootstyle="default")
+        passwordLabel.place(relheight = 0.2, relx = 0.1, rely = 0.4)
 
         # entry boxes for typing username and password
         self.entry_username = ttk.Entry(self.login, bootstyle="primary")
@@ -87,13 +87,15 @@ class ChatApplication:
     #still need to add login button
     def _connect(self):
         
-        def connectionType():
+        def connection():
             if serverVar.get() == 0:
                 print("Client")
-                self.connection = protocol.Client(int(port.get()), ip.get(), "name")
+                self.connection = protocol.Client(int(port.get()), ip.get(), "Client")
+                self.connection.connect()
             else:
                 print("Server")
-                self.connection = protocol.Server(int(port.get()), ip.get(), "name")
+                self.connection = protocol.Server(int(port.get()), ip.get(), "Server")
+                self.connection.connectClient()
 
 
         self.setup = Toplevel()
@@ -103,8 +105,8 @@ class ChatApplication:
         self.setup.configure(width=400, height=400, bg=BG_COLOR)
 
         serverVar = IntVar()
-        serverButton = Checkbutton(self.setup, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=WHITE, fg=TEXT_COLOR, activebackground=BG_COLOR, 
-        activeforeground=TEXT_COLOR,selectcolor=CHECKBUTTON_COLOR, relief=FLAT, command=connectionType, variable=serverVar)
+        serverButton = Checkbutton(self.setup, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=BG_COLOR, fg=TEXT_COLOR, activebackground=BG_COLOR, 
+        activeforeground=TEXT_COLOR,selectcolor=CHECKBUTTON_COLOR, relief=FLAT, variable=serverVar)
 
         serverButton.place(relheight=0.07, relx=0.35, rely=0.8, relwidth=0.35)
 
@@ -122,6 +124,10 @@ class ChatApplication:
         password = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
         password_label.place(relheight=0.15, relx=0.1, rely=0.341)
         password.place(relheight=0.1, relx=0.4, rely=0.372)
+
+
+        connectButton = Button(self.setup, text="Connect", width=20, command=connection, bg=BG_COLOR, fg=TEXT_COLOR)
+        connectButton.place(relheight=0.1, relx=0.4, rely=0.65, relwidth=0.15)
         
 
 
