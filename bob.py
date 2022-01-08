@@ -23,5 +23,8 @@ PORT = 3401        # completely random port number
 #         break
 
 
-bob = protocol.Client(3401, "127.0.0.1", "Bob")
-bob.connect()
+# bob = protocol.Client(3401, "127.0.0.1", "Bob")
+# bob.connect()
+
+bob = gui.ChatApplication()
+bob.run()

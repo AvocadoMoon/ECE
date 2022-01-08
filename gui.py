@@ -1,3 +1,4 @@
+import threading
 from tkinter import *
 import protocol
 import ttkbootstrap as ttk
@@ -23,8 +24,8 @@ class ChatApplication:
     def __init__(self):
         self.window = Tk()
         self.window.withdraw()  # hide the chat window temporarily while we make the user log in
-        #self._login()
-        self._connect()
+        self._login()
+        self.username = None
 
         self.connection = None
         
@@ -78,9 +79,11 @@ class ChatApplication:
             print(entry_username, entry_password)
             print('credentials:', username, password)
             if entry_username == username and entry_password == password.strip():
+                self.username = username    # get their username
                 self.sender = entry_username  # create a new attribute for the sender's name
                 self.login.destroy() # successful login! so we can destroy the login window
-                self._setup_main_window()   # open the actual chat window
+                self._connect() #now let the user decide which server its going to join or if its going to be the server
+                #self._setup_main_window()   # open the actual chat window
         self.fail.place(relheight = 0.08, x = 160, y = 175) # if credentials were incorrect, tell the user that the login failed
                 
     
@@ -88,45 +91,43 @@ class ChatApplication:
     def _connect(self):
         
         def connection():
-            if serverVar.get() == 0:
-                print("Client")
-                self.connection = protocol.Client(int(port.get()), ip.get(), "Client")
-                self.connection.connect()
-            else:
-                print("Server")
-                self.connection = protocol.Server(int(port.get()), ip.get(), "Server")
-                self.connection.connectClient()
+            server = True
+            if self.serverVar.get() == 0:
+                server = False
+            self.connection = protocol.Connection(int(port.get()), ip.get(), self.username, server)
+            self.connection.connect()
+            self._setup_main_window()
 
 
-        self.setup = Toplevel()
+        self.connectWindow = Toplevel(self.window)
 
-        self.setup.title("Set Connection Settings")
-        self.setup.resizable(width=False, height=False)
-        self.setup.configure(width=400, height=400, bg=BG_COLOR)
+        self.connectWindow.title("Set Connection Settings")
+        self.connectWindow.resizable(width=False, height=False)
+        self.connectWindow.configure(width=400, height=400, bg=WHITE)
 
-        serverVar = IntVar()
-        serverButton = Checkbutton(self.setup, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=BG_COLOR, fg=TEXT_COLOR, activebackground=BG_COLOR, 
-        activeforeground=TEXT_COLOR,selectcolor=CHECKBUTTON_COLOR, relief=FLAT, variable=serverVar)
+        self.serverVar = IntVar()
+        serverButton = Checkbutton(self.connectWindow, text="Hosting Server", onvalue=1, offvalue=0, height=2, width=10, bg=BG_COLOR, fg=TEXT_COLOR, activebackground=BG_COLOR, 
+        activeforeground=TEXT_COLOR,selectcolor=CHECKBUTTON_COLOR, relief=FLAT, variable=self.serverVar)
 
         serverButton.place(relheight=0.07, relx=0.35, rely=0.8, relwidth=0.35)
 
-        ip_label = Label(self.setup, text="Enter IP: ", font=FONT, height=5, width=10, background=BG_COLOR, fg= TEXT_COLOR)
-        ip = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
+        ip_label = Label(self.connectWindow, text="Enter IP: ", font=FONT, height=5, width=10, background=BG_COLOR, fg= TEXT_COLOR)
+        ip = Entry(self.connectWindow, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
         ip_label.place(relheight=0.2, relx=0.1, rely=0.07)
         ip.place(relheight=0.1, relx=0.4, rely=0.11)
 
-        port_label = Label(self.setup, text="Enter Port: ", font=FONT, height=5, width=10, background=BG_COLOR, fg= TEXT_COLOR)
-        port = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
+        port_label = Label(self.connectWindow, text="Enter Port: ", font=FONT, height=5, width=10, background=BG_COLOR, fg= TEXT_COLOR)
+        port = Entry(self.connectWindow, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
         port_label.place(relheight=0.2, relx=0.1, rely=0.2)
         port.place(relheight=0.1, relx=0.4, rely=0.241)
 
-        password_label = Label(self.setup, text="Enter Server \n Password: ", font=FONT, height=3, width=12, background=BG_COLOR, fg= TEXT_COLOR, wraplength=150)
-        password = Entry(self.setup, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
+        password_label = Label(self.connectWindow, text="Enter Server \n Password: ", font=FONT, height=3, width=12, background=BG_COLOR, fg= TEXT_COLOR, wraplength=150)
+        password = Entry(self.connectWindow, font=FONT, background=BG_COLOR, foreground=TEXT_COLOR)
         password_label.place(relheight=0.15, relx=0.1, rely=0.341)
         password.place(relheight=0.1, relx=0.4, rely=0.372)
 
 
-        connectButton = Button(self.setup, text="Connect", width=20, command=connection, bg=BG_COLOR, fg=TEXT_COLOR)
+        connectButton = Button(self.connectWindow, text="Connect", width=20, command=connection, bg=BG_COLOR, fg=TEXT_COLOR)
         connectButton.place(relheight=0.1, relx=0.4, rely=0.65, relwidth=0.15)
         
 
@@ -195,6 +196,7 @@ class ChatApplication:
 
 
     def _setup_main_window(self):
+        self.connectWindow.destroy()
         self.window.deiconify() # show the chat window
         self.window.title("Chat")
         self.window.resizable(width=False, height=False)
@@ -238,6 +240,9 @@ class ChatApplication:
         # logout button
         logout_button = ttk.Button(self.window, text="Logout", bootstyle="primary", command=lambda: self._on_logout_pressed()) 
         logout_button.place(x=380, y=10)
+
+        self.recieveThread = threading.Thread(target=self._recieveMessage)
+        self.recieveThread.start()
      
     def _on_logout_pressed(self):
         self.window.withdraw()
@@ -245,26 +250,26 @@ class ChatApplication:
 
     def _on_enter_pressed(self, event):
         msg = self.msg_entry.get()
-        self._insert_message(msg, "You")
-        
-    def _insert_message(self, msg, sender):
         if not msg:
             return
         
+        self.connection.sendMessage(msg)
         self.msg_entry.delete(0, END) #clears message entry box
-        msg1 = f"{sender}: {msg}\n"
+        msg1 = f"You: {msg}\n"
         self.text_widget.configure(state=NORMAL)
         self.text_widget.insert(END, msg1) #inserts message to widget
         self.text_widget.configure(state=DISABLED)
         
         self.text_widget.see(END)
     
-    def _recieveMessage(self, msg):
-        self.msg_entry.delete(0, END)
-        msg1 = f"{msg}\n"
-        self.text_widget.configure(state=NORMAL)
-        self.text_widget.insert(END, msg1)
-        self.text_widget.configure(state=DISABLED)
+    def _recieveMessage(self):
+        while True:
+            msg = self.connection.recieveMessage()
+            print(msg)
+            msg1 = f"{msg}\n"
+            self.text_widget.configure(state=NORMAL)
+            self.text_widget.insert(END, msg1)
+            self.text_widget.configure(state=DISABLED)
              
         
 if __name__ == "__main__":

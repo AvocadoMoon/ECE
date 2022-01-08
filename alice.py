@@ -32,10 +32,12 @@ PORT = 3401         # completely random port number
 # clientsock, addr = sock.accept()    # accept a connection from a client
 # handleClientConnection(clientsock, addr)
 
-alice = protocol.Server(3401, "127.0.0.1", "Alice")
+# alice = protocol.Server(3401, "127.0.0.1", "Alice")
 
-alice.connectClient()
+# alice.connectClient()
 
+alice = gui.ChatApplication()
+alice.run()
 
 # References;
 # https://www.geeksforgeeks.org/socket-programming-python/
