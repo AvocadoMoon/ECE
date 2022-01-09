@@ -91,10 +91,10 @@ class ChatApplication:
     def _connect(self):
         
         def connection():
-            server = True
+            self.server = True
             if self.serverVar.get() == 0:
-                server = False
-            self.connection = protocol.Connection(int(port.get()), ip.get(), self.username, server)
+                self.server = False
+            self.connection = protocol.Connection(int(port.get()), ip.get(), self.username, self.server, self)
             self.connection.connect()
             self._setup_main_window()
 
@@ -240,9 +240,6 @@ class ChatApplication:
         # logout button
         logout_button = ttk.Button(self.window, text="Logout", bootstyle="primary", command=lambda: self._on_logout_pressed()) 
         logout_button.place(x=380, y=10)
-
-        self.recieveThread = threading.Thread(target=self._recieveMessage)
-        self.recieveThread.start()
      
     def _on_logout_pressed(self):
         self.window.withdraw()
@@ -262,14 +259,11 @@ class ChatApplication:
         
         self.text_widget.see(END)
     
-    def _recieveMessage(self):
-        while True:
-            msg = self.connection.recieveMessage()
-            print(msg)
-            msg1 = f"{msg}\n"
-            self.text_widget.configure(state=NORMAL)
-            self.text_widget.insert(END, msg1)
-            self.text_widget.configure(state=DISABLED)
+    def displayRecievedMessages(self, msg):
+        msg1 = f"{msg}\n"
+        self.text_widget.configure(state=NORMAL)
+        self.text_widget.insert(END, msg1)
+        self.text_widget.configure(state=DISABLED)
              
         
 if __name__ == "__main__":
