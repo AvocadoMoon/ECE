@@ -3,6 +3,8 @@ from tkinter import *
 import protocol
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from tkinter.filedialog import askopenfile  # allows us to upload an image
+from PIL import ImageTk, Image
 # https://ttkbootstrap.readthedocs.io/en/latest/gettingstarted/installation/ 
 # install with pip 
 
@@ -28,6 +30,9 @@ class ChatApplication:
         self.username = None
 
         self.connection = None
+        self.send_image = False
+        self.files = []
+
         
     def run(self):
         self.window.mainloop()
@@ -51,9 +56,11 @@ class ChatApplication:
         # entry boxes for typing username and password
         self.entry_username = ttk.Entry(self.login, bootstyle="primary")
         self.entry_username.place(relwidth = 0.4, relheight = 0.12, relx = 0.30, rely = 0.25)
-
+        self.entry_username.focus()
         self.entry_password = ttk.Entry(self.login, bootstyle="primary", show="*")
         self.entry_password.place(relwidth = 0.4, relheight = 0.12, relx = 0.30, rely = 0.45)
+        # login if user presses enter/return
+        self.entry_password.bind("<Return>", lambda event: self._verify_credentials(self.entry_username.get(), self.entry_password.get()))
 
         # failed login label
         self.fail = ttk.Label(self.login, text = "Login Failed", justify = CENTER, bootstyle="danger")
@@ -67,6 +74,8 @@ class ChatApplication:
         self.create_account = ttk.Button(self.login, text="Create a new account", width=20, bootstyle="default-outline",
                              command=lambda: self._create_new_account()) 
         self.create_account.place(x=110, y=250)
+
+
 
     def _verify_credentials(self, entry_username, entry_password):
         # open the credentials file and parse it. this is inefficient. needs to be optimized/cleaned up...
@@ -83,7 +92,8 @@ class ChatApplication:
                 self.sender = entry_username  # create a new attribute for the sender's name
                 self.login.destroy() # successful login! so we can destroy the login window
                 self._connect() #now let the user decide which server its going to join or if its going to be the server
-                #self._setup_main_window()   # open the actual chat window
+                # self._setup_main_window()   # open the actual chat window
+                # should be commented ^^^
         self.fail.place(relheight = 0.08, x = 160, y = 175) # if credentials were incorrect, tell the user that the login failed
                 
     
@@ -193,8 +203,6 @@ class ChatApplication:
             self.success = ttk.Label(self.account, text = "Account successfully created! \nYou may now close out of this window and proceed to the login.", justify = CENTER, bootstyle="success")
             self.success.place(relheight = 0.15, relx = 0.02, rely = 0.4)
 
-
-
     def _setup_main_window(self):
         self.connectWindow.destroy()
         self.window.deiconify() # show the chat window
@@ -217,49 +225,91 @@ class ChatApplication:
         self.text_widget.place(relheight=0.745, relwidth=1, rely=0.08)
         self.text_widget.configure(cursor="arrow", state=DISABLED)
         
+        # bottom label
+        self.bottom_label = Label(self.window, bg=BG_GRAY, height=80)
+        self.bottom_label.place(relwidth=1, rely=0.825)
+
+        # message entry box
+        self.msg_entry = Entry(self.bottom_label, bg="#2C3E50", fg=TEXT_COLOR, font=FONT)
+        self.msg_entry.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
+        self.msg_entry.focus()
+        self.msg_entry.bind("<Return>", self._on_enter_pressed)
+
         # scroll bar
         scrollbar = Scrollbar(self.text_widget)
         scrollbar.place(relheight=1, relx=0.974)
         scrollbar.configure(command=self.text_widget.yview)
-        
-        # bottom label
-        bottom_label = Label(self.window, bg=BG_GRAY, height=80)
-        bottom_label.place(relwidth=1, rely=0.825)
-        
-        # message entry box
-        self.msg_entry = Entry(bottom_label, bg="#2C3E50", fg=TEXT_COLOR, font=FONT)
-        self.msg_entry.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
-        self.msg_entry.focus()
-        self.msg_entry.bind("<Return>", self._on_enter_pressed)
-        
+
         # send button
-        send_button = Button(bottom_label, text="Send", font=FONT_BOLD, width=20, bg=BG_GRAY,
-                             command=lambda: self._on_enter_pressed(None))
-        send_button.place(relx=0.77, rely=0.008, relheight=0.06, relwidth=0.22)
+        send_button = Button(self.bottom_label, text="Send", font=FONT_BOLD, width=20, bg=BG_GRAY,
+                             command=lambda: self._on_enter_pressed(self.send_image))
+        send_button.place(relx=0.77, rely=0.008, relheight=0.02, relwidth=0.22)
+
+         # upload file button
+        upload_file = Button(self.bottom_label, text="Upload File", font=FONT_BOLD, width=20, bg=BG_GRAY,
+                             command=lambda: self._open_file())
+        upload_file.place(relx=0.77, rely=0.040, relheight=0.02, relwidth=0.22)
 
         # logout button
         logout_button = ttk.Button(self.window, text="Logout", bootstyle="primary", command=lambda: self._on_logout_pressed()) 
         logout_button.place(x=380, y=10)
+
+    def _open_file(self):
+        self.path = askopenfile(mode='r', filetypes=[('Image', '*.png *.jpg *.jpeg')]) # get image path
+        img = Image.open(self.path.name)
+        img = img.resize((img.width // 2, img.height // 2)) # shrink the image arbitrarily... need to standardize this somehow.
+        self.image = ImageTk.PhotoImage(img) # create a Tkinter PhotoImage object
+        self.files.append(self.image)
+
+        # pseudo display for the image (so that we can scroll)
+        self.img_entry = Text(self.bottom_label, bg="#2C3E50", fg=TEXT_COLOR, font=FONT)
+        self.img_entry.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
+
+        # scrollbar
+        msg_scrollbar = Scrollbar(self.img_entry)
+        msg_scrollbar.place(relheight=1, relx=0.974)
+        msg_scrollbar.configure(command=self.img_entry.yview)
+
+        # insert the image
+        self.img_entry.image_create(END, image=self.files[-1])
+
+        # boolean flag to indicate whether or not we're sending an image
+        self.send_image = True
+
+        # allow us to press enter to send
+        self.img_entry.focus()  # this isn't working??
+        self.img_entry.bind('<Return>', lambda event: self._on_enter_pressed(self.send_image))
+
      
     def _on_logout_pressed(self):
         self.window.withdraw()
         self.__init__()
 
     def _on_enter_pressed(self, event):
-        msg = self.msg_entry.get()
-        if not msg:
-            return
-        
-        self.connection.sendMessage(msg)
+        if self.send_image: # if we are sending an image...
+            msg = self.path
+            msg1 = f"You: "
+            self.img_entry.destroy()
+        else:
+            msg = self.msg_entry.get()
+            if not msg:
+                return
+            msg1 = f"You: {msg}\n"
+
+        # self.connection.sendMessage(msg)  # NEED TO UPDATE THIS FUNCTION TO SUPPORT IMAGES!!! TODO
         self.msg_entry.delete(0, END) #clears message entry box
-        msg1 = f"You: {msg}\n"
         self.text_widget.configure(state=NORMAL)
         self.text_widget.insert(END, msg1) #inserts message to widget
+
+        if self.send_image:
+            self.text_widget.image_create(END, image=self.files[-1])
+            self.text_widget.insert(END, '\n')
+            self.send_image = False # reset this flag to be false. might need to relocate this
+
         self.text_widget.configure(state=DISABLED)
-        
         self.text_widget.see(END)
     
-    def displayRecievedMessages(self, msg):
+    def displayRecievedMessages(self, msg): # TODO: add support for receiving an image
         msg1 = f"{msg}\n"
         self.text_widget.configure(state=NORMAL)
         self.text_widget.insert(END, msg1)

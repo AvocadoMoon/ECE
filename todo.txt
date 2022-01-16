@@ -1,0 +1,8 @@
+- hash the passwords (for logging in and for storing in credentials.txt)
+- displayRecievedMessages (in gui.py) needs to support images
+- protocol.py send/receive must support images. 
+    - can we add a boolean flag as an argument to the send/receive functions to 
+    indicate whether we're sending/receiving an image or not? perhaps we can avoid 
+    defining separate sendimage/receiveimage functions.
+- ENCRYPTION!!!
+- cat AI --> you can only send pics of cats. otherwise 3 strikes and you're out aka get kicked off the server.

@@ -66,9 +66,9 @@ class Connection():
             msg = ""
             if self.__server__: #non server just needs to recieve message
                 msg = sock.recv(1024).decode()
-                self._serverRelayMessage(sock, msg)
+                self._serverRelayMessage(sock, msg) # server receives a message from a particular client and then must relay it to all other clients
             if not(self.__server__):    #server is responsible for all handling of information so when a client sends a message it needs to relay its message to all other clients
-                msg = self.__sock__.recv(1024).decode()
+                msg = self.__sock__.recv(1024).decode() # client simply receives a message from the server
             self.guiPointer.displayRecievedMessages(msg)
     
     # server handles all information sending
