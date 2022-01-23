@@ -5,6 +5,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter.filedialog import askopenfile  # allows us to upload an image
 from PIL import ImageTk, Image
+from Crypto.Hash import SHA256  # pip install pycryptodome
+
 # https://ttkbootstrap.readthedocs.io/en/latest/gettingstarted/installation/ 
 # install with pip 
 
@@ -86,8 +88,10 @@ class ChatApplication:
             info = c.split(':')
             username, password = info[0], info[1]   # extract the username and password 
             print(entry_username, entry_password)
-            print('credentials:', username, password)
-            if entry_username == username and entry_password == password.strip():
+            #print('credentials:', username, password)
+            obj = SHA256.new(data=entry_password.encode())
+            hashed_password = obj.digest()
+            if entry_username == username and str(hashed_password) == password.strip():
                 self.username = username    # get their username
                 self.sender = entry_username  # create a new attribute for the sender's name
                 self.login.destroy() # successful login! so we can destroy the login window
@@ -185,7 +189,9 @@ class ChatApplication:
         else:
             f = open('credentials.txt', 'a')
             f.write('\n')
-            f.write(username + ':' + password)
+            obj = SHA256.new(data = password.encode())
+            hashed_password = obj.digest()
+            f.write(username + ':' + str(hashed_password))
             f.close()
 
             # allow user to close out of this window now
@@ -256,29 +262,31 @@ class ChatApplication:
 
     def _open_file(self):
         self.path = askopenfile(mode='r', filetypes=[('Image', '*.png *.jpg *.jpeg')]) # get image path
-        img = Image.open(self.path.name)
-        img = img.resize((img.width // 2, img.height // 2)) # shrink the image arbitrarily... need to standardize this somehow.
-        self.image = ImageTk.PhotoImage(img) # create a Tkinter PhotoImage object
-        self.files.append(self.image)
+        if self.path:   # if the user actually chose an image (aka didn't close out of the window)
+            img = Image.open(self.path.name)
+            img = img.resize((img.width // 2, img.height // 2)) # shrink the image arbitrarily... need to standardize this somehow.
+            self.image = ImageTk.PhotoImage(img) # create a Tkinter PhotoImage object
+            self.files.append(self.image)
 
-        # pseudo display for the image (so that we can scroll)
-        self.img_entry = Text(self.bottom_label, bg="#2C3E50", fg=TEXT_COLOR, font=FONT)
-        self.img_entry.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
+            # pseudo display for the image (so that we can scroll)
+            self.img_entry = Text(self.bottom_label, bg="#2C3E50", fg=TEXT_COLOR, font=FONT)
+            self.img_entry.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
 
-        # scrollbar
-        msg_scrollbar = Scrollbar(self.img_entry)
-        msg_scrollbar.place(relheight=1, relx=0.974)
-        msg_scrollbar.configure(command=self.img_entry.yview)
+            # scrollbar
+            msg_scrollbar = Scrollbar(self.img_entry)
+            msg_scrollbar.place(relheight=1, relx=0.974)
+            msg_scrollbar.configure(command=self.img_entry.yview)
 
-        # insert the image
-        self.img_entry.image_create(END, image=self.files[-1])
+            # insert the image
+            self.img_entry.image_create(END, image=self.files[-1])
 
-        # boolean flag to indicate whether or not we're sending an image
-        self.send_image = True
+            # boolean flag to indicate whether or not we're sending an image
+            self.send_image = True
 
-        # allow us to press enter to send
-        self.img_entry.focus()  # this isn't working??
-        self.img_entry.bind('<Return>', lambda event: self._on_enter_pressed(self.send_image))
+            # allow us to press enter to send
+            self.img_entry.focus()  # this isn't working??
+            self.img_entry.bind('<Return>', lambda event: self._on_enter_pressed(self.send_image))
+        return
 
      
     def _on_logout_pressed(self):
@@ -297,6 +305,8 @@ class ChatApplication:
             msg1 = f"You: {msg}\n"
 
         # self.connection.sendMessage(msg)  # NEED TO UPDATE THIS FUNCTION TO SUPPORT IMAGES!!! TODO
+        # potential idea: if sending an image... call sendImage(). if sending a text message... call sendMessage()
+        # that should work ^ because separate functions will handle the differences between sending images vs text messages
         self.msg_entry.delete(0, END) #clears message entry box
         self.text_widget.configure(state=NORMAL)
         self.text_widget.insert(END, msg1) #inserts message to widget
@@ -309,7 +319,7 @@ class ChatApplication:
         self.text_widget.configure(state=DISABLED)
         self.text_widget.see(END)
     
-    def displayRecievedMessages(self, msg): # TODO: add support for receiving an image
+    def displayRecievedMessages(self, msg): # TODO: add support for receiving an image. 
         msg1 = f"{msg}\n"
         self.text_widget.configure(state=NORMAL)
         self.text_widget.insert(END, msg1)
